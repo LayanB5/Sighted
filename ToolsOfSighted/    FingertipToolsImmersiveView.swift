@@ -383,70 +383,101 @@ private struct SampleDesignCanvas: View {
     }
 
     private func perceivedColor(_ color: SemanticColor) -> Color {
+        let normalRGB = normalRGB(color)
+
         guard toolState.isPerceptionEnabled,
               toolState.selectedPerception == .cvdLens else {
-            return normalColor(color)
+            return Color(red: normalRGB.red, green: normalRGB.green, blue: normalRGB.blue)
         }
+
+        let simulatedRGB: (red: Double, green: Double, blue: Double)
 
         switch toolState.selectedCVDType {
         case .protanopia:
-            return protanopiaColor(color)
+            simulatedRGB = protanopiaRGB(color)
         case .deuteranopia:
-            return deuteranopiaColor(color)
+            simulatedRGB = deuteranopiaRGB(color)
         case .tritanopia:
-            return tritanopiaColor(color)
+            simulatedRGB = tritanopiaRGB(color)
         }
+
+        let intensity = min(max(toolState.cvdIntensity, 0), 1)
+        let red = normalRGB.red + (simulatedRGB.red - normalRGB.red) * intensity
+        let green = normalRGB.green + (simulatedRGB.green - normalRGB.green) * intensity
+        let blue = normalRGB.blue + (simulatedRGB.blue - normalRGB.blue) * intensity
+
+        return Color(red: red, green: green, blue: blue)
     }
 
     private func normalColor(_ color: SemanticColor) -> Color {
+        let rgb = normalRGB(color)
+        return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
+    }
+
+    private func normalRGB(_ color: SemanticColor) -> (red: Double, green: Double, blue: Double) {
         switch color {
         case .blue:
-            return .blue
+            return (0.00, 0.48, 1.00)
         case .green:
-            return .green
+            return (0.20, 0.78, 0.35)
         case .orange:
-            return .orange
+            return (1.00, 0.58, 0.00)
         case .red:
-            return .red
+            return (1.00, 0.23, 0.19)
         }
     }
 
     private func protanopiaColor(_ color: SemanticColor) -> Color {
+        let rgb = protanopiaRGB(color)
+        return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
+    }
+
+    private func protanopiaRGB(_ color: SemanticColor) -> (red: Double, green: Double, blue: Double) {
         switch color {
         case .blue:
-            return Color(red: 0.20, green: 0.40, blue: 0.74)
+            return (0.20, 0.40, 0.74)
         case .green:
-            return Color(red: 0.66, green: 0.61, blue: 0.28)
+            return (0.66, 0.61, 0.28)
         case .orange:
-            return Color(red: 0.69, green: 0.58, blue: 0.24)
+            return (0.69, 0.58, 0.24)
         case .red:
-            return Color(red: 0.50, green: 0.45, blue: 0.23)
+            return (0.50, 0.45, 0.23)
         }
     }
 
     private func deuteranopiaColor(_ color: SemanticColor) -> Color {
+        let rgb = deuteranopiaRGB(color)
+        return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
+    }
+
+    private func deuteranopiaRGB(_ color: SemanticColor) -> (red: Double, green: Double, blue: Double) {
         switch color {
         case .blue:
-            return Color(red: 0.18, green: 0.42, blue: 0.74)
+            return (0.18, 0.42, 0.74)
         case .green:
-            return Color(red: 0.67, green: 0.58, blue: 0.26)
+            return (0.67, 0.58, 0.26)
         case .orange:
-            return Color(red: 0.72, green: 0.57, blue: 0.23)
+            return (0.72, 0.57, 0.23)
         case .red:
-            return Color(red: 0.62, green: 0.52, blue: 0.24)
+            return (0.62, 0.52, 0.24)
         }
     }
 
     private func tritanopiaColor(_ color: SemanticColor) -> Color {
+        let rgb = tritanopiaRGB(color)
+        return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
+    }
+
+    private func tritanopiaRGB(_ color: SemanticColor) -> (red: Double, green: Double, blue: Double) {
         switch color {
         case .blue:
-            return Color(red: 0.22, green: 0.56, blue: 0.58)
+            return (0.22, 0.56, 0.58)
         case .green:
-            return Color(red: 0.26, green: 0.64, blue: 0.60)
+            return (0.26, 0.64, 0.60)
         case .orange:
-            return Color(red: 0.90, green: 0.48, blue: 0.44)
+            return (0.90, 0.48, 0.44)
         case .red:
-            return Color(red: 0.86, green: 0.36, blue: 0.44)
+            return (0.86, 0.36, 0.44)
         }
     }
 
@@ -510,7 +541,7 @@ private struct SampleDesignCanvas: View {
 
         switch perception {
         case .cvdLens:
-            return 1.0 - toolState.cvdIntensity * 0.40
+            return 1.0 - toolState.cvdIntensity * 0.18
         case .lowVision:
             return 0.82 - toolState.lowVisionIntensity * 0.32
         case .dyslexia:
@@ -580,11 +611,11 @@ private struct SampleDesignCanvas: View {
         ZStack {
             Rectangle()
                 .fill(cvdTintColor)
-                .opacity(0.08 + toolState.cvdIntensity * 0.18)
+                .opacity(0.03 + toolState.cvdIntensity * 0.08)
                 .blendMode(.softLight)
 
             Rectangle()
-                .fill(.gray.opacity(0.04 + toolState.cvdIntensity * 0.10))
+                .fill(.gray.opacity(0.02 + toolState.cvdIntensity * 0.04))
                 .blendMode(.saturation)
         }
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
@@ -1021,7 +1052,7 @@ private struct FullSceneFilterOverlay: View {
     private func overlayOpacity(for perception: SightTool) -> Double {
         switch perception {
         case .cvdLens:
-            return 0.16 + toolState.cvdIntensity * 0.50
+            return 0.04 + toolState.cvdIntensity * 0.12
 
         case .lowVision:
             return 0.10 + toolState.lowVisionIntensity * 0.34
@@ -1041,9 +1072,9 @@ private struct FullSceneFilterOverlay: View {
         let intensity = toolState.cvdIntensity
 
         return Rectangle()
-            .fill(.gray.opacity(0.10 + intensity * 0.32))
+            .fill(.gray.opacity(0.04 + intensity * 0.12))
             .blendMode(.saturation)
-            .opacity(0.35 + intensity * 0.45)
+            .opacity(0.18 + intensity * 0.22)
     }
 
     private var cvdColorCompressionLayer: some View {
@@ -1053,17 +1084,17 @@ private struct FullSceneFilterOverlay: View {
             switch toolState.selectedCVDType {
             case .protanopia:
                 Rectangle()
-                    .fill(Color(red: 0.58, green: 0.48, blue: 0.20).opacity(0.05 + intensity * 0.16))
+                    .fill(Color(red: 0.58, green: 0.48, blue: 0.20).opacity(0.02 + intensity * 0.06))
                     .blendMode(.multiply)
 
             case .deuteranopia:
                 Rectangle()
-                    .fill(Color(red: 0.52, green: 0.50, blue: 0.22).opacity(0.05 + intensity * 0.18))
+                    .fill(Color(red: 0.52, green: 0.50, blue: 0.22).opacity(0.02 + intensity * 0.06))
                     .blendMode(.multiply)
 
             case .tritanopia:
                 Rectangle()
-                    .fill(Color(red: 0.30, green: 0.46, blue: 0.62).opacity(0.04 + intensity * 0.16))
+                    .fill(Color(red: 0.30, green: 0.46, blue: 0.62).opacity(0.02 + intensity * 0.06))
                     .blendMode(.multiply)
             }
         }
