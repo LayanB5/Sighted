@@ -57,6 +57,10 @@ final class ToolState {
     var isPerceptionEnabled: Bool = true
 
     var isToolEnabled: Bool = true
+    var selectedAdjustmentTool: AdjustmentTool? = .contrast
+    var brightnessIntensity: Double = 0.30
+    var strongBordersEnabled: Bool = false
+    var symbolsEnabled: Bool = true
 
     var cvdIntensity: Double = 0.75
     var selectedCVDType: CVDType = .deuteranopia
@@ -67,12 +71,49 @@ final class ToolState {
     var blurIntensity: Double = 0.40
 
     enum CVDType: String, CaseIterable, Identifiable {
-        case protanopia = "Protanopia"
-        case deuteranopia = "Deuteranopia"
-        case tritanopia = "Tritanopia"
+        case protanopia = "Protanopia · Red-blind"
+        case deuteranopia = "Deuteranopia · Green-blind"
+        case tritanopia = "Tritanopia · Blue-yellow"
 
         var id: String {
             rawValue
+        }
+    }
+
+    enum AdjustmentTool: String, CaseIterable, Identifiable {
+        case simulatorControls = "Simulator Controls"
+        case contrast = "Contrast"
+        case borders = "Borders"
+        case symbols = "Symbols"
+
+        var id: String {
+            rawValue
+        }
+
+        var iconName: String {
+            switch self {
+            case .simulatorControls:
+                return "slider.horizontal.3"
+            case .contrast:
+                return "circle.lefthalf.filled"
+            case .borders:
+                return "rectangle.dashed"
+            case .symbols:
+                return "textformat.alt"
+            }
+        }
+
+        var shortDescription: String {
+            switch self {
+            case .simulatorControls:
+                return "Tune the selected simulation"
+            case .contrast:
+                return "Adjust contrast and brightness"
+            case .borders:
+                return "Add stronger outlines"
+            case .symbols:
+                return "Use icons with color"
+            }
         }
     }
 }

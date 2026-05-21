@@ -11,7 +11,7 @@ struct ToolSettingsPanel: View {
     var body: some View {
         @Bindable var toolState = toolState
 
-        if let selectedTool = toolState.selectedTool {
+        if let selectedTool = toolState.selectedAdjustmentTool {
             VStack(alignment: .leading, spacing: 18) {
                 header(for: selectedTool)
 
@@ -26,7 +26,7 @@ struct ToolSettingsPanel: View {
         }
     }
 
-    private func header(for tool: SightTool) -> some View {
+    private func header(for tool: ToolState.AdjustmentTool) -> some View {
         @Bindable var toolState = toolState
 
         return HStack(spacing: 12) {
@@ -54,113 +54,141 @@ struct ToolSettingsPanel: View {
     }
 
     @ViewBuilder
-    private func controls(for tool: SightTool) -> some View {
+    private func controls(for tool: ToolState.AdjustmentTool) -> some View {
         switch tool {
-        case .cvdLens:
-            cvdLensControls
-
-        case .lowVision:
-            lowVisionControls
-
-        case .dyslexia:
-            dyslexiaControls
+        case .simulatorControls:
+            simulatorControls
 
         case .contrast:
             contrastControls
 
-        case .blur:
-            blurControls
+        case .borders:
+            bordersControls
+
+        case .symbols:
+            symbolsControls
         }
     }
 
-    private var cvdLensControls: some View {
+    private var simulatorControls: some View {
         @Bindable var toolState = toolState
 
         return VStack(alignment: .leading, spacing: 16) {
-            Text("Color Blindness Type")
-                .font(.subheadline)
-                .fontWeight(.semibold)
+            if let selectedPerception = toolState.selectedPerception {
+                switch selectedPerception {
+                case .cvdLens:
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Color Blindness Simulation")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
 
-            Picker("CVD Type", selection: $toolState.selectedCVDType) {
-                ForEach(ToolState.CVDType.allCases, id: \.self) { type in
-                    Text(type.rawValue)
-                        .tag(type)
+                        Picker("CVD Type", selection: $toolState.selectedCVDType) {
+                            ForEach(ToolState.CVDType.allCases, id: \.self) { type in
+                                Text(type.rawValue)
+                                    .tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        intensitySlider(
+                            title: "Simulation Intensity",
+                            value: $toolState.cvdIntensity
+                        )
+
+                        Text("Use this to test whether status colors, charts, and warnings still make sense without relying on color alone.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                case .lowVision:
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Low Vision Simulation")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+
+                        intensitySlider(
+                            title: "Vision Difficulty",
+                            value: $toolState.lowVisionIntensity
+                        )
+
+                        Text("This combines reduced clarity, lower contrast, and peripheral difficulty so you can check if details stay readable.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                case .dyslexia:
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Dyslexia Simulation")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+
+                        intensitySlider(
+                            title: "Letter Change Speed",
+                            value: $toolState.dyslexiaIntensity
+                        )
+
+                        Text("This changes how quickly letters swap, move, grow, and shrink without changing the real colors of the interface.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                case .contrast:
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Low Contrast Simulation")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+
+                        intensitySlider(
+                            title: "Contrast Difficulty",
+                            value: $toolState.contrastIntensity
+                        )
+                    }
+
+                case .blur:
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Blurred Vision Simulation")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+
+                        intensitySlider(
+                            title: "Blur Amount",
+                            value: $toolState.blurIntensity
+                        )
+                    }
                 }
-            }
-            .pickerStyle(.segmented)
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Choose a perception first", systemImage: "eye")
+                        .font(.headline)
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Filter Intensity")
-
-                    Spacer()
-
-                    Text("\(Int(toolState.cvdIntensity * 100))%")
+                    Text("Open the eye menu and select Color Blindness, Low Vision, or Dyslexia. Then use this control to tune the selected simulation.")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .font(.subheadline)
-
-                Slider(value: $toolState.cvdIntensity, in: 0...1)
             }
-
-            Text("This simulates how colors may appear for users with different types of color blindness.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
-    private var lowVisionControls: some View {
-        @Bindable var toolState = toolState
+    private func intensitySlider(title: String, value: Binding<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
 
-        return VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Vision Clarity")
+                Spacer()
 
-                    Spacer()
-
-                    Text("\(Int(toolState.lowVisionIntensity * 100))%")
-                        .foregroundStyle(.secondary)
-                }
-                .font(.subheadline)
-
-                Slider(value: $toolState.lowVisionIntensity, in: 0...1)
+                Text("\(Int(value.wrappedValue * 100))%")
+                    .foregroundStyle(.secondary)
             }
+            .font(.subheadline)
 
-            Text("Use this to preview reduced clarity and difficulty seeing small interface details.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var dyslexiaControls: some View {
-        @Bindable var toolState = toolState
-
-        return VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Reading Distortion")
-
-                    Spacer()
-
-                    Text("\(Int(toolState.dyslexiaIntensity * 100))%")
-                        .foregroundStyle(.secondary)
-                }
-                .font(.subheadline)
-
-                Slider(value: $toolState.dyslexiaIntensity, in: 0...1)
-            }
-
-            Text("This simulates text instability and reading difficulty for accessibility testing.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Slider(value: value, in: 0...1)
         }
     }
 
     private var contrastControls: some View {
         @Bindable var toolState = toolState
 
-        return VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Contrast Level")
@@ -175,31 +203,44 @@ struct ToolSettingsPanel: View {
                 Slider(value: $toolState.contrastIntensity, in: 0...1)
             }
 
-            Text("Use this to test whether interface elements remain visible with different contrast levels.")
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Brightness")
+
+                    Spacer()
+
+                    Text("\(Int(toolState.brightnessIntensity * 100))%")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.subheadline)
+
+                Slider(value: $toolState.brightnessIntensity, in: 0...1)
+            }
+
+            Text("Use contrast and brightness together to test whether interface elements stay readable in different visual conditions.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+    private var bordersControls: some View {
+        @Bindable var toolState = toolState
+
+        return VStack(alignment: .leading, spacing: 16) {
+            Toggle("Strong Borders", isOn: $toolState.strongBordersEnabled)
+
+            Text("Adds stronger outlines so meaning is not carried by color alone.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
 
-    private var blurControls: some View {
+    private var symbolsControls: some View {
         @Bindable var toolState = toolState
 
         return VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Blur Amount")
+            Toggle("Use Symbols with Color", isOn: $toolState.symbolsEnabled)
 
-                    Spacer()
-
-                    Text("\(Int(toolState.blurIntensity * 100))%")
-                        .foregroundStyle(.secondary)
-                }
-                .font(.subheadline)
-
-                Slider(value: $toolState.blurIntensity, in: 0...1)
-            }
-
-            Text("This simulates unclear or blurred vision.")
+            Text("Helps designers avoid relying only on color to communicate status or meaning.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
