@@ -24,13 +24,20 @@ struct ContentView: View {
             Button {
                 Task {
                     if immersiveSpaceIsOpen {
-                        await dismissImmersiveSpace()
                         immersiveSpaceIsOpen = false
+                        await dismissImmersiveSpace()
                     } else {
                         let result = await openImmersiveSpace(id: "FingertipToolsSpace")
 
-                        if case .opened = result {
+                        switch result {
+                        case .opened:
                             immersiveSpaceIsOpen = true
+
+                        case .userCancelled, .error:
+                            immersiveSpaceIsOpen = false
+
+                        @unknown default:
+                            immersiveSpaceIsOpen = false
                         }
                     }
                 }
@@ -54,6 +61,9 @@ struct ContentView: View {
         .padding(28)
         .frame(width: 430)
         .glassBackgroundEffect()
+        .onDisappear {
+            immersiveSpaceIsOpen = false
+        }
     }
 
     private var header: some View {
