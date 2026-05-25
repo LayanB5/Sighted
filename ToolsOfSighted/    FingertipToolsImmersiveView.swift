@@ -4,12 +4,14 @@ import RealityKitContent
 
 struct FingertipToolsImmersiveView: View {
     @Environment(ToolState.self) private var toolState
+    @Environment(\.openWindow) private var openWindow
     @State private var handTrackingModel = HandTrackingModel()
     @State private var selectedToolID: String?
     @State private var settingsPanelPosition: SIMD3<Float> = [0.28, 1.25, -0.85]
     @State private var panelDragStartPosition: SIMD3<Float> = [0.28, 1.25, -0.85]
-    @State private var isTestingWithoutHands = true
+    @State private var isTestingWithoutHands = false
     @State private var filterOverlayPosition: SIMD3<Float> = [0.0, 1.18, -2.2]
+    @State private var suppressToolActivationUntil = Date.distantPast
 
     var body: some View {
         RealityView { content, attachments in
@@ -17,16 +19,9 @@ struct FingertipToolsImmersiveView: View {
                 if let toolEntity = attachments.entity(for: tool.attachmentID) {
                     toolEntity.name = tool.attachmentID
                     toolEntity.position = tool.position
-                    toolEntity.isEnabled = !isTestingWithoutHands && tool.isVisible
+                    toolEntity.isEnabled = !isTestingWithoutHands && tool.isVisible && selectedToolID == nil && !handTrackingModel.toolsAreSuppressed
                     content.add(toolEntity)
                 }
-            }
-
-            if let settingsPanel = attachments.entity(for: "ToolSettingsPanel") {
-                settingsPanel.name = "ToolSettingsPanel"
-                settingsPanel.position = settingsPanelPosition
-                settingsPanel.isEnabled = selectedToolID != nil
-                content.add(settingsPanel)
             }
 
             if let handToolsMenu = attachments.entity(for: "HandToolsTestMenu") {
@@ -46,7 +41,7 @@ struct FingertipToolsImmersiveView: View {
             if let sampleDesign = attachments.entity(for: "SampleDesignCanvas") {
                 sampleDesign.name = "SampleDesignCanvas"
                 sampleDesign.position = [0.0, 1.08, -0.95]
-                sampleDesign.isEnabled = true
+                sampleDesign.isEnabled = false
                 content.add(sampleDesign)
             }
 
@@ -73,18 +68,10 @@ struct FingertipToolsImmersiveView: View {
                     }
 
                     toolEntity.position = tool.position
-                    toolEntity.isEnabled = !isTestingWithoutHands && tool.isVisible
+                    toolEntity.isEnabled = !isTestingWithoutHands && tool.isVisible && selectedToolID == nil && !handTrackingModel.toolsAreSuppressed
                 }
             }
 
-            if let settingsPanel = attachments.entity(for: "ToolSettingsPanel") {
-                if settingsPanel.parent == nil {
-                    content.add(settingsPanel)
-                }
-
-                settingsPanel.position = settingsPanelPosition
-                settingsPanel.isEnabled = selectedToolID != nil
-            }
 
             if let handToolsMenu = attachments.entity(for: "HandToolsTestMenu") {
                 if handToolsMenu.parent == nil {
@@ -110,7 +97,7 @@ struct FingertipToolsImmersiveView: View {
                 }
 
                 sampleDesign.position = [0.0, 1.08, -0.95]
-                sampleDesign.isEnabled = true
+                sampleDesign.isEnabled = false
             }
 
             if let filterOverlay = attachments.entity(for: "FullSceneFilterOverlay") {
@@ -132,27 +119,18 @@ struct FingertipToolsImmersiveView: View {
                 adjustmentOverlay.scale = [4.8, 4.8, 1.0]
                 adjustmentOverlay.isEnabled = toolState.isToolEnabled && toolState.selectedAdjustmentTool != nil
             }
+
         } attachments: {
             ForEach(handTrackingModel.tools) { tool in
                 Attachment(id: tool.attachmentID) {
                     FingertipToolButton(
                         tool: tool,
-                        isSelected: selectedToolID == tool.id
+                        isSelected: selectedToolID == tool.id,
+                        isPressed: tool.isPressed
                     ) {
-                        selectedToolID = tool.id
-                        toolState.selectedTool = sightTool(for: tool)
-                        settingsPanelPosition = panelPosition(near: tool.position)
-                        panelDragStartPosition = settingsPanelPosition
-                        print("Selected tool: \(tool.title)")
+                        selectAdjustmentTool(with: tool.id, near: tool.position)
                     }
                 }
-            }
-
-            Attachment(id: "ToolSettingsPanel") {
-                DraggableToolSettingsPanel(
-                    panelPosition: $settingsPanelPosition,
-                    panelDragStartPosition: $panelDragStartPosition
-                )
             }
 
             Attachment(id: "HandToolsTestMenu") {
@@ -182,7 +160,40 @@ struct FingertipToolsImmersiveView: View {
         .task {
             await handTrackingModel.startTracking()
         }
-        
+        .onChange(of: handTrackingModel.activatedToolID) { _, activatedToolID in
+            guard let activatedToolID else {
+                return
+            }
+
+            Task { @MainActor in
+                guard selectedToolID == nil, Date() >= suppressToolActivationUntil else {
+                    handTrackingModel.activatedToolID = nil
+                    return
+                }
+
+                selectAdjustmentTool(with: activatedToolID)
+                handTrackingModel.activatedToolID = nil
+            }
+        }
+        .onChange(of: selectedToolID) { _, newValue in
+            handTrackingModel.toolsAreSuppressed = newValue != nil
+        }
+        .onChange(of: toolState.selectedAdjustmentTool) { _, newValue in
+            if newValue == nil {
+                suppressToolActivationUntil = Date().addingTimeInterval(1.0)
+                selectedToolID = nil
+                handTrackingModel.activatedToolID = nil
+                handTrackingModel.toolsAreSuppressed = true
+
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(800))
+
+                    if selectedToolID == nil && toolState.selectedAdjustmentTool == nil {
+                        handTrackingModel.toolsAreSuppressed = false
+                    }
+                }
+            }
+        }
     }
 
     private func panelPosition(near fingertipPosition: SIMD3<Float>) -> SIMD3<Float> {
@@ -197,21 +208,39 @@ struct FingertipToolsImmersiveView: View {
         ]
     }
 
-    private func sightTool(for fingertipTool: HandTrackingModel.FingertipTool) -> SightTool {
-        let title = fingertipTool.title.lowercased()
+    private func selectAdjustmentTool(with toolID: String, near position: SIMD3<Float>? = nil) {
+        guard let adjustmentTool = adjustmentTool(for: toolID) else {
+            return
+        }
 
-        if title.contains("cvd") || title.contains("color") {
-            return .cvdLens
-        } else if title.contains("low") || title.contains("vision") {
-            return .lowVision
-        } else if title.contains("dyslexia") || title.contains("text") {
-            return .dyslexia
-        } else if title.contains("contrast") {
-            return .contrast
-        } else if title.contains("blur") {
-            return .blur
+        selectedToolID = toolID
+        toolState.selectedAdjustmentTool = adjustmentTool
+        toolState.isToolEnabled = true
+        handTrackingModel.toolsAreSuppressed = true
+        openWindow(id: "ToolSettingsWindow")
+
+        if let position {
+            settingsPanelPosition = panelPosition(near: position)
         } else {
-            return .cvdLens
+            settingsPanelPosition = [0.32, 1.25, -0.72]
+        }
+
+        panelDragStartPosition = settingsPanelPosition
+    }
+
+
+    private func adjustmentTool(for toolID: String) -> ToolState.AdjustmentTool? {
+        switch toolID {
+        case "simulatorControls":
+            return .simulatorControls
+        case "contrast":
+            return .contrast
+        case "borders":
+            return .borders
+        case "symbols":
+            return .symbols
+        default:
+            return nil
         }
     }
 }
@@ -1266,33 +1295,30 @@ private struct AdjustmentToolsOverlay: View {
 struct FingertipToolButton: View {
     let tool: HandTrackingModel.FingertipTool
     let isSelected: Bool
+    let isPressed: Bool
     let action: () -> Void
 
     var body: some View {
         Button {
             action()
         } label: {
-            VStack(spacing: 3) {
+            ZStack {
                 Image(systemName: tool.systemImage)
-                    .font(.system(size: 18, weight: .semibold))
-
-                Text(tool.title)
-                    .font(.system(size: 9, weight: .bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .font(.system(size: isSelected ? 14 : 12, weight: .semibold))
             }
             .foregroundStyle(.white)
-            .frame(width: isSelected ? 62 : 52, height: isSelected ? 62 : 52)
+            .frame(width: isSelected ? 34 : 26, height: isSelected ? 34 : 26)
             .background(
                 Circle()
-                    .fill(isSelected ? Color.blue.opacity(0.85) : Color.white.opacity(0.18))
+                    .fill(isPressed ? Color.green.opacity(0.85) : (isSelected ? Color.blue.opacity(0.85) : Color.white.opacity(0.18)))
             )
             .overlay(
                 Circle()
-                    .stroke(Color.white.opacity(isSelected ? 1.0 : 0.85), lineWidth: isSelected ? 2.4 : 1.4)
+                    .stroke(Color.white.opacity(isPressed || isSelected ? 1.0 : 0.64), lineWidth: isPressed || isSelected ? 1.2 : 0.65)
             )
-            .scaleEffect(isSelected ? 1.08 : 1.0)
-            .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
+            .scaleEffect(isPressed ? 0.86 : (isSelected ? 1.02 : 1.0))
+            .animation(.spring(response: 0.24, dampingFraction: 0.76), value: isSelected)
+            .animation(.spring(response: 0.18, dampingFraction: 0.70), value: isPressed)
             .glassBackgroundEffect()
         }
         .buttonStyle(.plain)
@@ -1300,34 +1326,7 @@ struct FingertipToolButton: View {
     }
 }
 
-private struct DraggableToolSettingsPanel: View {
-    @Binding var panelPosition: SIMD3<Float>
-    @Binding var panelDragStartPosition: SIMD3<Float>
 
-    var body: some View {
-        ToolSettingsPanel()
-            .overlay(alignment: .topTrailing) {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(10)
-            }
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        let scale: Float = 0.0012
-                        panelPosition = [
-                            panelDragStartPosition.x + Float(value.translation.width) * scale,
-                            panelDragStartPosition.y - Float(value.translation.height) * scale,
-                            panelDragStartPosition.z
-                        ]
-                    }
-                    .onEnded { _ in
-                        panelDragStartPosition = panelPosition
-                    }
-            )
-    }
-}
 
 private struct PerceptionEyeMenu: View {
     @Environment(ToolState.self) private var toolState

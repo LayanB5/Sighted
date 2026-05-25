@@ -18,6 +18,17 @@ struct ToolsOfSightedApp: App {
         }
         .defaultSize(width: 430, height: 360)
 
+        WindowGroup(id: "ToolSettingsWindow") {
+            ToolSettingsPanel()
+                .environment(toolState)
+                .frame(minWidth: 420, minHeight: 360)
+                .onDisappear {
+                    toolState.selectedAdjustmentTool = nil
+                    toolState.isToolEnabled = false
+                }
+        }
+        .defaultSize(width: 460, height: 430)
+
         ImmersiveSpace(id: "FingertipToolsSpace") {
             FingertipToolsImmersiveView()
                 .environment(toolState)
