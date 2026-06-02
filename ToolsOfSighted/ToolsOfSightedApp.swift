@@ -10,28 +10,20 @@ import SwiftUI
 @main
 struct ToolsOfSightedApp: App {
     @State private var toolState = ToolState()
+    @State private var designReviewState = DesignReviewState()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(toolState)
+                .environment(designReviewState)
         }
         .defaultSize(width: 430, height: 360)
 
-        WindowGroup(id: "ToolSettingsWindow") {
-            ToolSettingsPanel()
-                .environment(toolState)
-                .frame(minWidth: 420, minHeight: 360)
-                .onDisappear {
-                    toolState.selectedAdjustmentTool = nil
-                    toolState.isToolEnabled = false
-                }
-        }
-        .defaultSize(width: 460, height: 430)
-
         ImmersiveSpace(id: "FingertipToolsSpace") {
-            FingertipToolsImmersiveView()
+            FingertipToolsView()
                 .environment(toolState)
+                .environment(designReviewState)
         }
         .immersionStyle(selection: .constant(.mixed), in: .mixed)
     }

@@ -6,11 +6,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(ToolState.self) private var toolState
     @Environment(\.openImmersiveSpace) private var openImmersiveSpace
-    @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
-
-    @State private var immersiveSpaceIsOpen = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -22,37 +19,29 @@ struct ContentView: View {
             explanation
 
             Button {
-                Task {
-                    if immersiveSpaceIsOpen {
-                        immersiveSpaceIsOpen = false
-                        await dismissImmersiveSpace()
-                    } else {
-                        let result = await openImmersiveSpace(id: "FingertipToolsSpace")
+                Task { @MainActor in
+                    let result = await openImmersiveSpace(id: "FingertipToolsSpace")
 
-                        switch result {
-                        case .opened:
-                            immersiveSpaceIsOpen = true
+                    switch result {
+                    case .opened:
+                        dismiss()
 
-                        case .userCancelled, .error:
-                            immersiveSpaceIsOpen = false
+                    case .userCancelled, .error:
+                        break
 
-                        @unknown default:
-                            immersiveSpaceIsOpen = false
-                        }
+                    @unknown default:
+                        break
                     }
                 }
             } label: {
-                Label(
-                    immersiveSpaceIsOpen ? "Close Sighted Space" : "Open Sighted Space",
-                    systemImage: immersiveSpaceIsOpen ? "xmark.circle" : "eye"
-                )
+                Label("Open Sighted Space", systemImage: "eye")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
             }
             .buttonStyle(.borderedProminent)
 
-            Text("Perception modes and hand tools are controlled inside the immersive space.")
+            Text("Choose Demo, Import, or Live from the Source bar inside the immersive space.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -62,7 +51,6 @@ struct ContentView: View {
         .frame(width: 430)
         .glassBackgroundEffect()
         .onDisappear {
-            immersiveSpaceIsOpen = false
         }
     }
 
@@ -86,9 +74,9 @@ struct ContentView: View {
 
     private var explanation: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Choose a perception mode from the eye button.", systemImage: "eye")
-            Label("Adjust tools from the hand controls.", systemImage: "hand.raised")
-            Label("Preview your work through accessibility perspectives.", systemImage: "sparkles")
+            Label("Use Source to switch between Demo, Import, and Live.", systemImage: "rectangle.on.rectangle")
+            Label("Use the eye menu to choose P, D, or T filters.", systemImage: "eye")
+            Label("Use fingertip tools for Contrast and Lens controls.", systemImage: "hand.raised")
         }
         .font(.subheadline)
         .foregroundStyle(.secondary)
@@ -97,5 +85,4 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environment(ToolState())
 }
