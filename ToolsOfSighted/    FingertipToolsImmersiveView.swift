@@ -87,7 +87,6 @@ struct FingertipToolsImmersiveView: View {
 
             if let toolSettingsPanel = attachments.entity(for: "FingertipToolSettingsPanel") {
                 toolSettingsPanel.name = "FingertipToolSettingsPanel"
-                prepareSpatialPanel(toolSettingsPanel, collisionSize: [0.68, 0.48, 0.04])
                 toolSettingsPanel.position = settingsPanelPosition
                 toolSettingsPanel.orientation = orientationFacingUser(from: settingsPanelPosition)
                 toolSettingsPanel.scale = [0.68, 0.68, 0.68]
@@ -169,7 +168,6 @@ struct FingertipToolsImmersiveView: View {
                     content.add(toolSettingsPanel)
                 }
 
-                prepareSpatialPanel(toolSettingsPanel, collisionSize: [0.68, 0.48, 0.04])
                 toolSettingsPanel.position = settingsPanelPosition
                 toolSettingsPanel.orientation = orientationFacingUser(from: settingsPanelPosition)
                 toolSettingsPanel.scale = [0.68, 0.68, 0.68]
@@ -349,8 +347,7 @@ struct FingertipToolsImmersiveView: View {
     private func isSpatialPanelName(_ entityName: String) -> Bool {
         entityName == "SampleDesignCanvas" ||
         entityName == "DesignSourceControlPanel" ||
-        entityName == "FloatingRealityLensOverlay" ||
-        entityName == "FingertipToolSettingsPanel"
+        entityName == "FloatingRealityLensOverlay"
     }
 
     private func syncDragStartPosition(for entityName: String) {
