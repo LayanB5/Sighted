@@ -148,13 +148,12 @@ struct FingertipToolSettingsPanel: View {
             }
             .padding(toolState.selectedAdjustmentTool == .contrast ? 0 : 14)
             .frame(width: panelWidth, alignment: .topLeading)
-            .background(
-                usesReadableToolPanelBackground ? .regularMaterial : .ultraThinMaterial,
-                in: RoundedRectangle(cornerRadius: 26, style: .continuous)
-            )
+            .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(.white.opacity(0.115), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .stroke(.white.opacity(usesReadableToolPanelBackground ? 0.22 : 0.16), lineWidth: 1)
+                    .stroke(.white.opacity(toolState.strongBordersEnabled ? 0.55 : 0.20), lineWidth: toolState.strongBordersEnabled ? 3 : 1)
             }
 
             Capsule()
@@ -731,9 +730,14 @@ struct ContrastCheckerPreview: View {
 
                 Spacer(minLength: 6)
 
-                ColorPicker("", selection: selection)
-                    .labelsHidden()
+                Circle()
+                    .fill(color)
                     .frame(width: 30, height: 30)
+                    .overlay {
+                        Circle()
+                            .stroke(.white.opacity(0.75), lineWidth: 1)
+                    }
+                    .allowsHitTesting(false)
 
                 Button {
                     designReviewState.beginPickingContrastColor(isTextTarget ? .text : .background)

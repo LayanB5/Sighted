@@ -79,6 +79,7 @@ struct FingertipToolsImmersiveView: View {
                 toolSettingsPanel.isEnabled = selectedToolID != nil && toolState.selectedAdjustmentTool != nil
                 content.add(toolSettingsPanel)
             }
+
         } update: { content, attachments in
             for tool in focusedFingertipTools {
                 if let toolEntity = attachments.entity(for: tool.attachmentID) {
@@ -152,6 +153,7 @@ struct FingertipToolsImmersiveView: View {
                 toolSettingsPanel.isEnabled = selectedToolID != nil && toolState.selectedAdjustmentTool != nil
             }
 
+
         } attachments: {
             ForEach(focusedFingertipTools) { tool in
                 Attachment(id: tool.attachmentID) {
@@ -208,6 +210,7 @@ struct FingertipToolsImmersiveView: View {
                 )
                 .environment(designReviewState)
             }
+
         }
         .task {
             await handTrackingModel.startTracking()
@@ -412,3 +415,4 @@ struct FingertipToolsImmersiveView: View {
         }
     }
 }
+

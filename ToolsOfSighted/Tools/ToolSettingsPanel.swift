@@ -101,6 +101,7 @@ struct ToolSettingsPanel: View {
                 .foregroundStyle(.secondary)
         }
     }
+
     private var lensControls: some View {
         @Bindable var toolState = toolState
 
