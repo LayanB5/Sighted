@@ -41,7 +41,6 @@ struct FingertipToolsImmersiveView: View {
 
             if let sampleDesign = attachments.entity(for: "SampleDesignCanvas") {
                 sampleDesign.name = "SampleDesignCanvas"
-                prepareSpatialPanel(sampleDesign, collisionSize: [0.95, 0.62, 0.04])
                 sampleDesign.position = sampleDesignPosition
                 sampleDesign.orientation = orientationFacingUser(from: sampleDesignPosition)
                 sampleDesign.scale = [0.96, 0.96, 0.96]
@@ -51,7 +50,6 @@ struct FingertipToolsImmersiveView: View {
 
             if let designSourceControl = attachments.entity(for: "DesignSourceControlPanel") {
                 designSourceControl.name = "DesignSourceControlPanel"
-                prepareSpatialPanel(designSourceControl, collisionSize: [0.82, 0.28, 0.04])
                 designSourceControl.position = designSourceControlPosition
                 designSourceControl.orientation = orientationFacingUser(from: designSourceControlPosition)
                 designSourceControl.scale = [1.02, 1.02, 1.02]
@@ -77,7 +75,6 @@ struct FingertipToolsImmersiveView: View {
 
             if let realityLensOverlay = attachments.entity(for: "FloatingRealityLensOverlay") {
                 realityLensOverlay.name = "FloatingRealityLensOverlay"
-                prepareSpatialPanel(realityLensOverlay, collisionSize: [0.72, 0.50, 0.04])
                 realityLensOverlay.position = realityLensPanelPosition
                 realityLensOverlay.orientation = orientationFacingUser(from: realityLensPanelPosition)
                 realityLensOverlay.scale = [1.0, 1.0, 1.0]
@@ -92,6 +89,16 @@ struct FingertipToolsImmersiveView: View {
                 toolSettingsPanel.scale = [0.68, 0.68, 0.68]
                 toolSettingsPanel.isEnabled = selectedToolID != nil && toolState.selectedAdjustmentTool != nil
                 content.add(toolSettingsPanel)
+            }
+
+            if let toolSettingsPanelDragHandle = attachments.entity(for: "FingertipToolSettingsPanelDragHandle") {
+                toolSettingsPanelDragHandle.name = "FingertipToolSettingsPanelDragHandle"
+                prepareSpatialPanel(toolSettingsPanelDragHandle, collisionSize: [0.28, 0.055, 0.04])
+                toolSettingsPanelDragHandle.position = toolSettingsPanelDragHandlePosition
+                toolSettingsPanelDragHandle.orientation = orientationFacingUser(from: settingsPanelPosition)
+                toolSettingsPanelDragHandle.scale = [0.68, 0.68, 0.68]
+                toolSettingsPanelDragHandle.isEnabled = selectedToolID != nil && toolState.selectedAdjustmentTool != nil
+                content.add(toolSettingsPanelDragHandle)
             }
 
         } update: { content, attachments in
@@ -112,7 +119,6 @@ struct FingertipToolsImmersiveView: View {
                     content.add(sampleDesign)
                 }
 
-                prepareSpatialPanel(sampleDesign, collisionSize: [0.95, 0.62, 0.04])
                 sampleDesign.position = sampleDesignPosition
                 sampleDesign.orientation = orientationFacingUser(from: sampleDesignPosition)
                 sampleDesign.scale = [0.96, 0.96, 0.96]
@@ -124,7 +130,6 @@ struct FingertipToolsImmersiveView: View {
                     content.add(designSourceControl)
                 }
 
-                prepareSpatialPanel(designSourceControl, collisionSize: [0.82, 0.28, 0.04])
                 designSourceControl.position = designSourceControlPosition
                 designSourceControl.orientation = orientationFacingUser(from: designSourceControlPosition)
                 designSourceControl.scale = [1.02, 1.02, 1.02]
@@ -156,7 +161,6 @@ struct FingertipToolsImmersiveView: View {
                     content.add(realityLensOverlay)
                 }
 
-                prepareSpatialPanel(realityLensOverlay, collisionSize: [0.72, 0.50, 0.04])
                 realityLensOverlay.position = realityLensPanelPosition
                 realityLensOverlay.orientation = orientationFacingUser(from: realityLensPanelPosition)
                 realityLensOverlay.scale = [1.0, 1.0, 1.0]
@@ -172,6 +176,18 @@ struct FingertipToolsImmersiveView: View {
                 toolSettingsPanel.orientation = orientationFacingUser(from: settingsPanelPosition)
                 toolSettingsPanel.scale = [0.68, 0.68, 0.68]
                 toolSettingsPanel.isEnabled = selectedToolID != nil && toolState.selectedAdjustmentTool != nil
+            }
+
+            if let toolSettingsPanelDragHandle = attachments.entity(for: "FingertipToolSettingsPanelDragHandle") {
+                if toolSettingsPanelDragHandle.parent == nil {
+                    content.add(toolSettingsPanelDragHandle)
+                }
+
+                prepareSpatialPanel(toolSettingsPanelDragHandle, collisionSize: [0.28, 0.055, 0.04])
+                toolSettingsPanelDragHandle.position = toolSettingsPanelDragHandlePosition
+                toolSettingsPanelDragHandle.orientation = orientationFacingUser(from: settingsPanelPosition)
+                toolSettingsPanelDragHandle.scale = [0.68, 0.68, 0.68]
+                toolSettingsPanelDragHandle.isEnabled = selectedToolID != nil && toolState.selectedAdjustmentTool != nil
             }
 
 
@@ -230,6 +246,13 @@ struct FingertipToolsImmersiveView: View {
                     panelDragStartPosition: $panelDragStartPosition
                 )
                 .environment(designReviewState)
+            }
+
+            Attachment(id: "FingertipToolSettingsPanelDragHandle") {
+                Capsule()
+                    .fill(.white.opacity(0.001))
+                    .frame(width: 220, height: 44)
+                    .contentShape(Rectangle())
             }
 
         }
@@ -296,6 +319,10 @@ struct FingertipToolsImmersiveView: View {
         )
     }
 
+    private var toolSettingsPanelDragHandlePosition: SIMD3<Float> {
+        settingsPanelPosition + SIMD3<Float>(0.0, -0.205, 0.012)
+    }
+
     private func prepareSpatialPanel(_ entity: Entity, collisionSize: SIMD3<Float>) {
         entity.components.set(InputTargetComponent())
         entity.components.set(CollisionComponent(shapes: [
@@ -324,11 +351,16 @@ struct FingertipToolsImmersiveView: View {
 
         let currentLocation = value.convert(value.location3D, from: .local, to: parent)
         let startLocation = value.convert(value.startLocation3D, from: .local, to: parent)
-        let delta = SIMD3<Float>(
+        var delta = SIMD3<Float>(
             Float(currentLocation.x - startLocation.x),
             Float(currentLocation.y - startLocation.y),
             Float(currentLocation.z - startLocation.z)
         )
+
+        if entityName == "FingertipToolSettingsPanelDragHandle" {
+            let depthDelta = Float(value.translation.height) * 0.0014
+            delta.z += depthDelta
+        }
 
         moveSpatialPanel(named: entityName, by: delta)
     }
@@ -345,20 +377,12 @@ struct FingertipToolsImmersiveView: View {
     }
 
     private func isSpatialPanelName(_ entityName: String) -> Bool {
-        entityName == "SampleDesignCanvas" ||
-        entityName == "DesignSourceControlPanel" ||
-        entityName == "FloatingRealityLensOverlay"
+        entityName == "FingertipToolSettingsPanelDragHandle"
     }
 
     private func syncDragStartPosition(for entityName: String) {
         switch entityName {
-        case "SampleDesignCanvas":
-            sampleDesignDragStartPosition = sampleDesignPosition
-        case "DesignSourceControlPanel":
-            designSourceControlDragStartPosition = designSourceControlPosition
-        case "FloatingRealityLensOverlay":
-            realityLensPanelDragStartPosition = realityLensPanelPosition
-        case "FingertipToolSettingsPanel":
+        case "FingertipToolSettingsPanelDragHandle":
             panelDragStartPosition = settingsPanelPosition
         default:
             break
@@ -367,17 +391,19 @@ struct FingertipToolsImmersiveView: View {
 
     private func moveSpatialPanel(named entityName: String, by delta: SIMD3<Float>) {
         switch entityName {
-        case "SampleDesignCanvas":
-            sampleDesignPosition = sampleDesignDragStartPosition + delta
-        case "DesignSourceControlPanel":
-            designSourceControlPosition = designSourceControlDragStartPosition + delta
-        case "FloatingRealityLensOverlay":
-            realityLensPanelPosition = realityLensPanelDragStartPosition + delta
-        case "FingertipToolSettingsPanel":
-            settingsPanelPosition = panelDragStartPosition + delta
+        case "FingertipToolSettingsPanelDragHandle":
+            settingsPanelPosition = clampedToolPanelPosition(panelDragStartPosition + delta)
         default:
             break
         }
+    }
+
+    private func clampedToolPanelPosition(_ position: SIMD3<Float>) -> SIMD3<Float> {
+        SIMD3<Float>(
+            position.x,
+            position.y,
+            min(max(position.z, -1.85), -0.38)
+        )
     }
 
     private var shouldShowFullSceneFilterOverlay: Bool {
