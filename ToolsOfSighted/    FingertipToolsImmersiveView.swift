@@ -472,16 +472,24 @@ struct FingertipToolsImmersiveView: View {
 
         let currentLocation = value.convert(value.location3D, from: .local, to: parent)
         let startLocation = value.convert(value.startLocation3D, from: .local, to: parent)
-        var delta = SIMD3<Float>(
-            Float(currentLocation.x - startLocation.x),
-            Float(currentLocation.y - startLocation.y),
-            Float(currentLocation.z - startLocation.z)
+
+        let horizontalSensitivity: Float = 1.18
+        let verticalSensitivity: Float = 1.05
+        let spatialDepthSensitivity: Float = 0.38
+        let screenDepthSensitivity: Float = 0.00055
+
+        let spatialDelta = SIMD3<Float>(
+            Float(currentLocation.x - startLocation.x) * horizontalSensitivity,
+            Float(currentLocation.y - startLocation.y) * verticalSensitivity,
+            Float(currentLocation.z - startLocation.z) * spatialDepthSensitivity
         )
 
-        if isSpatialPanelName(entityName) {
-            let depthDelta = Float(value.translation.height) * 0.0014
-            delta.z += depthDelta
-        }
+        let screenDepthDelta = Float(value.translation.height) * screenDepthSensitivity
+        let delta = SIMD3<Float>(
+            spatialDelta.x,
+            spatialDelta.y,
+            spatialDelta.z + screenDepthDelta
+        )
 
         moveSpatialPanel(named: entityName, by: delta)
     }
@@ -531,9 +539,9 @@ struct FingertipToolsImmersiveView: View {
 
     private func clampedToolPanelPosition(_ position: SIMD3<Float>) -> SIMD3<Float> {
         SIMD3<Float>(
-            position.x,
-            position.y,
-            min(max(position.z, -1.85), -0.38)
+            min(max(position.x, -4.0), 4.0),
+            min(max(position.y, -1.0), 3.2),
+            min(max(position.z, -5.0), 1.2)
         )
     }
 
