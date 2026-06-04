@@ -7,9 +7,65 @@
 //  UI subviews and component helpers for Fingertip Tools and Design Review.
 //
 
+
 import SwiftUI
 import UIKit
 import RealityKit
+
+private struct CVDPaletteDots: View {
+    let type: ToolState.CVDType
+
+    private var colors: [Color] {
+        switch type {
+        case .protanopia:
+            return [
+                Color(red: 0.78, green: 0.76, blue: 0.00),
+                Color(red: 1.00, green: 0.95, blue: 0.00),
+                Color(red: 0.62, green: 0.62, blue: 0.48),
+                Color(red: 0.70, green: 0.66, blue: 1.00)
+            ]
+        case .deuteranopia:
+            return [
+                Color(red: 0.78, green: 0.76, blue: 0.00),
+                Color(red: 1.00, green: 0.95, blue: 0.00),
+                Color(red: 0.62, green: 0.62, blue: 0.48),
+                Color(red: 0.10, green: 0.12, blue: 0.95)
+            ]
+        case .tritanopia:
+            return [
+                Color(red: 0.86, green: 0.02, blue: 0.00),
+                Color(red: 1.00, green: 0.62, blue: 0.68),
+                Color(red: 0.20, green: 0.60, blue: 0.62),
+                Color(red: 0.05, green: 0.78, blue: 0.78)
+            ]
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 3) {
+            HStack(spacing: 4) {
+                paletteCircle(colors[0])
+                paletteCircle(colors[1])
+            }
+
+            HStack(spacing: 4) {
+                paletteCircle(colors[2])
+                paletteCircle(colors[3])
+            }
+        }
+        .frame(width: 24, height: 24)
+    }
+
+    private func paletteCircle(_ color: Color) -> some View {
+        Circle()
+            .fill(color)
+            .frame(width: 7.5, height: 7.5)
+            .overlay {
+                Circle()
+                    .stroke(.white.opacity(0.18), lineWidth: 0.45)
+            }
+    }
+}
 
 // MARK: - Floating Reality Lens
 
@@ -383,7 +439,7 @@ struct DesignSourceControlPanel: View {
         }
         .padding(.horizontal, 5)
         .padding(.vertical, isFilterMenuExpanded ? 7 : 5)
-        .frame(width: 56)
+        .frame(width: 60)
         .background {
             Capsule(style: .continuous)
                 .fill(.white.opacity(isFilterMenuExpanded ? 0.075 : 0.055))
@@ -421,10 +477,10 @@ struct DesignSourceControlPanel: View {
     }
 
     private var filterOptionsPanel: some View {
-        VStack(spacing: 7) {
-            cvdOptionButton(code: "P", type: .protanopia)
-            cvdOptionButton(code: "D", type: .deuteranopia)
-            cvdOptionButton(code: "T", type: .tritanopia)
+        VStack(spacing: 9) {
+            cvdOptionButton(type: .protanopia)
+            cvdOptionButton(type: .deuteranopia)
+            cvdOptionButton(type: .tritanopia)
 
             Divider()
                 .frame(width: 28)
@@ -445,7 +501,7 @@ struct DesignSourceControlPanel: View {
         }
     }
 
-    private func cvdOptionButton(code: String, type: ToolState.CVDType) -> some View {
+    private func cvdOptionButton(type: ToolState.CVDType) -> some View {
         let isSelected = toolState.isPerceptionEnabled &&
             toolState.selectedPerception == .cvdLens &&
             toolState.selectedCVDType == type
@@ -470,14 +526,32 @@ struct DesignSourceControlPanel: View {
                         }
                 }
 
-                Text(code)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(isSelected ? .white : .white.opacity(0.70))
+                VStack(spacing: 2) {
+                    CVDPaletteDots(type: type)
+                        .opacity(isSelected ? 1.0 : 0.78)
+
+                    Text(cvdShortName(for: type))
+                        .font(.system(size: 6.8, weight: .semibold, design: .rounded))
+                        .foregroundStyle(isSelected ? .white.opacity(0.96) : .white.opacity(0.58))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                }
             }
-            .frame(width: 42, height: 38)
+            .frame(width: 46, height: 46)
         }
         .buttonStyle(.plain)
         .hoverEffect(.highlight)
+    }
+
+    private func cvdShortName(for type: ToolState.CVDType) -> String {
+        switch type {
+        case .protanopia:
+            return "Protan"
+        case .deuteranopia:
+            return "Deutan"
+        case .tritanopia:
+            return "Tritan"
+        }
     }
 
     private func sourceButton(_ source: DesignReviewSourceKind) -> some View {

@@ -1,7 +1,60 @@
+
 import SwiftUI
 import UniformTypeIdentifiers
 import RealityKit
 import RealityKitContent
+
+private struct CVDPaletteDots: View {
+    let type: ToolState.CVDType
+
+    private var colors: [Color] {
+        switch type {
+        case .protanopia:
+            return [
+                Color(red: 0.78, green: 0.76, blue: 0.00),
+                Color(red: 1.00, green: 0.95, blue: 0.00),
+                Color(red: 0.62, green: 0.62, blue: 0.48),
+                Color(red: 0.70, green: 0.66, blue: 1.00)
+            ]
+        case .deuteranopia:
+            return [
+                Color(red: 0.78, green: 0.76, blue: 0.00),
+                Color(red: 1.00, green: 0.95, blue: 0.00),
+                Color(red: 0.62, green: 0.62, blue: 0.48),
+                Color(red: 0.10, green: 0.12, blue: 0.95)
+            ]
+        case .tritanopia:
+            return [
+                Color(red: 0.86, green: 0.02, blue: 0.00),
+                Color(red: 1.00, green: 0.62, blue: 0.68),
+                Color(red: 0.20, green: 0.60, blue: 0.62),
+                Color(red: 0.05, green: 0.78, blue: 0.78)
+            ]
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(colors[0])
+                    .frame(width: 11, height: 11)
+                Circle()
+                    .fill(colors[1])
+                    .frame(width: 11, height: 11)
+            }
+
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(colors[2])
+                    .frame(width: 11, height: 11)
+                Circle()
+                    .fill(colors[3])
+                    .frame(width: 11, height: 11)
+            }
+        }
+    }
+}
 
 struct FingertipToolsImmersiveView: View {
     @Environment(ToolState.self) private var toolState
