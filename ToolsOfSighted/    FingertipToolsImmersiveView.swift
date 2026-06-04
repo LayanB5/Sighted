@@ -437,7 +437,8 @@ struct FingertipToolsImmersiveView: View {
     }
 
     private var sampleDesignDragHandlePosition: SIMD3<Float> {
-        sampleDesignPosition + SIMD3<Float>(0.0, -0.215, 0.012)
+        let verticalOffset: Float = designReviewState.activeSource == .importedImage ? -0.345 : -0.215
+        return sampleDesignPosition + SIMD3<Float>(0.0, verticalOffset, 0.012)
     }
 
     private var designSourceControlDragHandlePosition: SIMD3<Float> {

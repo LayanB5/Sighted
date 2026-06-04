@@ -1206,14 +1206,7 @@ struct SampleDesignCanvas: View {
                             .stroke(.white.opacity(toolState.strongBordersEnabled ? 0.44 : 0.14), lineWidth: toolState.strongBordersEnabled ? 2.4 : 1)
                     }
                     .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onEnded { value in
-                                if designReviewState.contrastPickTarget != nil {
-                                    pickImportedImageColor(from: importedImage, at: value.location, in: proxy.size)
-                                }
-                            }
-                    )
+                    .simultaneousGesture(importedImagePickingGesture(for: importedImage, in: proxy.size))
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 500)
@@ -1225,6 +1218,15 @@ struct SampleDesignCanvas: View {
                 EmptyView()
             }
         }
+    }
+
+
+    private func importedImagePickingGesture(for image: UIImage, in viewSize: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onEnded { value in
+                guard designReviewState.contrastPickTarget != nil else { return }
+                pickImportedImageColor(from: image, at: value.location, in: viewSize)
+            }
     }
 
     private var isInspectionLensActive: Bool {
