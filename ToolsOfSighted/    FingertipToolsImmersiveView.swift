@@ -101,6 +101,16 @@ struct FingertipToolsImmersiveView: View {
                 content.add(sampleDesign)
             }
 
+            if let sampleDesignDragHandle = attachments.entity(for: "SampleDesignCanvasDragHandle") {
+                sampleDesignDragHandle.name = "SampleDesignCanvasDragHandle"
+                prepareSpatialPanel(sampleDesignDragHandle, collisionSize: [0.42, 0.07, 0.04])
+                sampleDesignDragHandle.position = sampleDesignDragHandlePosition
+                sampleDesignDragHandle.orientation = orientationFacingUser(from: sampleDesignPosition)
+                sampleDesignDragHandle.scale = [0.96, 0.96, 0.96]
+                sampleDesignDragHandle.isEnabled = shouldShowSampleDesignCanvas
+                content.add(sampleDesignDragHandle)
+            }
+
             if let designSourceControl = attachments.entity(for: "DesignSourceControlPanel") {
                 designSourceControl.name = "DesignSourceControlPanel"
                 designSourceControl.position = designSourceControlPosition
@@ -108,6 +118,16 @@ struct FingertipToolsImmersiveView: View {
                 designSourceControl.scale = [1.02, 1.02, 1.02]
                 designSourceControl.isEnabled = true
                 content.add(designSourceControl)
+            }
+
+            if let designSourceControlDragHandle = attachments.entity(for: "DesignSourceControlPanelDragHandle") {
+                designSourceControlDragHandle.name = "DesignSourceControlPanelDragHandle"
+                prepareSpatialPanel(designSourceControlDragHandle, collisionSize: [0.34, 0.06, 0.04])
+                designSourceControlDragHandle.position = designSourceControlDragHandlePosition
+                designSourceControlDragHandle.orientation = orientationFacingUser(from: designSourceControlPosition)
+                designSourceControlDragHandle.scale = [1.02, 1.02, 1.02]
+                designSourceControlDragHandle.isEnabled = true
+                content.add(designSourceControlDragHandle)
             }
 
             if let filterOverlay = attachments.entity(for: "FullSceneFilterOverlay") {
@@ -178,6 +198,18 @@ struct FingertipToolsImmersiveView: View {
                 sampleDesign.isEnabled = shouldShowSampleDesignCanvas
             }
 
+            if let sampleDesignDragHandle = attachments.entity(for: "SampleDesignCanvasDragHandle") {
+                if sampleDesignDragHandle.parent == nil {
+                    content.add(sampleDesignDragHandle)
+                }
+
+                prepareSpatialPanel(sampleDesignDragHandle, collisionSize: [0.42, 0.07, 0.04])
+                sampleDesignDragHandle.position = sampleDesignDragHandlePosition
+                sampleDesignDragHandle.orientation = orientationFacingUser(from: sampleDesignPosition)
+                sampleDesignDragHandle.scale = [0.96, 0.96, 0.96]
+                sampleDesignDragHandle.isEnabled = shouldShowSampleDesignCanvas
+            }
+
             if let designSourceControl = attachments.entity(for: "DesignSourceControlPanel") {
                 if designSourceControl.parent == nil {
                     content.add(designSourceControl)
@@ -187,6 +219,18 @@ struct FingertipToolsImmersiveView: View {
                 designSourceControl.orientation = orientationFacingUser(from: designSourceControlPosition)
                 designSourceControl.scale = [1.02, 1.02, 1.02]
                 designSourceControl.isEnabled = true
+            }
+
+            if let designSourceControlDragHandle = attachments.entity(for: "DesignSourceControlPanelDragHandle") {
+                if designSourceControlDragHandle.parent == nil {
+                    content.add(designSourceControlDragHandle)
+                }
+
+                prepareSpatialPanel(designSourceControlDragHandle, collisionSize: [0.34, 0.06, 0.04])
+                designSourceControlDragHandle.position = designSourceControlDragHandlePosition
+                designSourceControlDragHandle.orientation = orientationFacingUser(from: designSourceControlPosition)
+                designSourceControlDragHandle.scale = [1.02, 1.02, 1.02]
+                designSourceControlDragHandle.isEnabled = true
             }
 
             if let filterOverlay = attachments.entity(for: "FullSceneFilterOverlay") {
@@ -266,12 +310,28 @@ struct FingertipToolsImmersiveView: View {
                 .environment(designReviewState)
             }
 
+            Attachment(id: "SampleDesignCanvasDragHandle") {
+                Capsule()
+                    .fill(.white.opacity(0.42))
+                    .frame(width: 118, height: 6)
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+            }
+
             Attachment(id: "DesignSourceControlPanel") {
                 DesignSourceControlPanel {
                     shouldHideDesignCanvasAfterCancelledImport = true
                     isImportPickerPresented = true
                 }
                 .environment(designReviewState)
+            }
+
+            Attachment(id: "DesignSourceControlPanelDragHandle") {
+                Capsule()
+                    .fill(.white.opacity(0.38))
+                    .frame(width: 72, height: 4)
+                    .padding(.vertical, 5)
+                    .contentShape(Rectangle())
             }
 
             Attachment(id: "FullSceneFilterOverlay") {
@@ -376,6 +436,14 @@ struct FingertipToolsImmersiveView: View {
         settingsPanelPosition + SIMD3<Float>(0.0, -0.205, 0.012)
     }
 
+    private var sampleDesignDragHandlePosition: SIMD3<Float> {
+        sampleDesignPosition + SIMD3<Float>(0.0, -0.215, 0.012)
+    }
+
+    private var designSourceControlDragHandlePosition: SIMD3<Float> {
+        designSourceControlPosition + SIMD3<Float>(0.0, -0.032, 0.012)
+    }
+
     private func prepareSpatialPanel(_ entity: Entity, collisionSize: SIMD3<Float>) {
         entity.components.set(InputTargetComponent())
         entity.components.set(CollisionComponent(shapes: [
@@ -410,7 +478,7 @@ struct FingertipToolsImmersiveView: View {
             Float(currentLocation.z - startLocation.z)
         )
 
-        if entityName == "FingertipToolSettingsPanelDragHandle" {
+        if isSpatialPanelName(entityName) {
             let depthDelta = Float(value.translation.height) * 0.0014
             delta.z += depthDelta
         }
@@ -430,13 +498,19 @@ struct FingertipToolsImmersiveView: View {
     }
 
     private func isSpatialPanelName(_ entityName: String) -> Bool {
-        entityName == "FingertipToolSettingsPanelDragHandle"
+        entityName == "FingertipToolSettingsPanelDragHandle" ||
+        entityName == "SampleDesignCanvasDragHandle" ||
+        entityName == "DesignSourceControlPanelDragHandle"
     }
 
     private func syncDragStartPosition(for entityName: String) {
         switch entityName {
         case "FingertipToolSettingsPanelDragHandle":
             panelDragStartPosition = settingsPanelPosition
+        case "SampleDesignCanvasDragHandle":
+            sampleDesignDragStartPosition = sampleDesignPosition
+        case "DesignSourceControlPanelDragHandle":
+            designSourceControlDragStartPosition = designSourceControlPosition
         default:
             break
         }
@@ -446,6 +520,10 @@ struct FingertipToolsImmersiveView: View {
         switch entityName {
         case "FingertipToolSettingsPanelDragHandle":
             settingsPanelPosition = clampedToolPanelPosition(panelDragStartPosition + delta)
+        case "SampleDesignCanvasDragHandle":
+            sampleDesignPosition = clampedSampleDesignPosition(sampleDesignDragStartPosition + delta)
+        case "DesignSourceControlPanelDragHandle":
+            designSourceControlPosition = clampedDesignSourceControlPosition(designSourceControlDragStartPosition + delta)
         default:
             break
         }
@@ -456,6 +534,22 @@ struct FingertipToolsImmersiveView: View {
             position.x,
             position.y,
             min(max(position.z, -1.85), -0.38)
+        )
+    }
+
+    private func clampedSampleDesignPosition(_ position: SIMD3<Float>) -> SIMD3<Float> {
+        SIMD3<Float>(
+            min(max(position.x, -4.0), 4.0),
+            min(max(position.y, -1.0), 3.2),
+            min(max(position.z, -5.0), 1.2)
+        )
+    }
+
+    private func clampedDesignSourceControlPosition(_ position: SIMD3<Float>) -> SIMD3<Float> {
+        SIMD3<Float>(
+            min(max(position.x, -4.0), 4.0),
+            min(max(position.y, -1.0), 3.2),
+            min(max(position.z, -5.0), 1.2)
         )
     }
 
