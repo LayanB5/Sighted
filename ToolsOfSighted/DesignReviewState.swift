@@ -189,6 +189,16 @@ final class DesignReviewState {
         }
     }
 
+    func setImportedPickImage(_ image: UIImage, sourceName: String) {
+        importedImage = image
+        sampledImage = image
+        importedSourceName = sourceName
+
+        if importedColorTokens.isEmpty {
+            importedColorTokens = Self.colorTokens(from: image, sourceName: sourceName)
+        }
+    }
+
     func useImportedColorTokens(_ tokens: [DesignReviewColorToken], sourceName: String = "Imported") {
         importedColorTokens = tokens
         importedSourceName = sourceName

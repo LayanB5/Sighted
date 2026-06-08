@@ -1979,7 +1979,41 @@ struct AdjustmentToolsOverlay: View {
         .blendMode(.screen)
     }
 }
+private struct FlowerPaletteToolIcon: View {
+    private let petals: [Color] = [
+        Color(red: 1.00, green: 0.78, blue: 0.22),
+        Color(red: 0.76, green: 0.82, blue: 0.34),
+        Color(red: 0.30, green: 0.74, blue: 0.76),
+        Color(red: 0.35, green: 0.43, blue: 0.70),
+        Color(red: 0.62, green: 0.34, blue: 0.74),
+        Color(red: 0.84, green: 0.38, blue: 0.62),
+        Color(red: 0.93, green: 0.30, blue: 0.30),
+        Color(red: 1.00, green: 0.55, blue: 0.22),
+        Color(red: 1.00, green: 0.68, blue: 0.20)
+    ]
 
+    var body: some View {
+        ZStack {
+            ForEach(petals.indices, id: \.self) { index in
+                Capsule()
+                    .fill(petals[index].opacity(0.74))
+                    .frame(width: 9, height: 21)
+                    .offset(y: -10.5)
+                    .rotationEffect(.degrees(Double(index) * 360.0 / Double(petals.count)))
+                    .blendMode(.plusLighter)
+            }
+
+            Circle()
+                .fill(.white.opacity(0.94))
+                .frame(width: 14, height: 14)
+                .overlay {
+                    Circle()
+                        .stroke(.white.opacity(0.42), lineWidth: 0.8)
+                }
+        }
+        .frame(width: 34, height: 34)
+    }
+}
 // MARK: - Fingertip Button
 
 struct FingertipToolButton: View {
@@ -1999,10 +2033,15 @@ struct FingertipToolButton: View {
                 }
                 .shadow(color: glowColor, radius: isSelected || isPressed ? 6 : 0)
 
-            Image(systemName: tool.systemImage)
-                .font(.system(size: isSelected || isPressed ? 16 : 14.5, weight: .semibold))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.white.opacity(isSelected || isPressed ? 1.0 : 0.90))
+            if tool.id == "contrast" {
+                FlowerPaletteToolIcon()
+                    .scaleEffect(isSelected || isPressed ? 1.06 : 1.0)
+            } else {
+                Image(systemName: tool.systemImage)
+                    .font(.system(size: isSelected || isPressed ? 16 : 14.5, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white.opacity(isSelected || isPressed ? 1.0 : 0.90))
+            }
         }
         .frame(width: 38, height: 38)
         .contentShape(Circle())

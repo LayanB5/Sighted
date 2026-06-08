@@ -54,6 +54,40 @@ private struct CVDPaletteDots: View {
             }
         }
     }
+
+}
+
+private struct FlowerPaletteToolIcon: View {
+    private let petals: [Color] = [
+        Color(red: 1.00, green: 0.78, blue: 0.22),
+        Color(red: 0.76, green: 0.82, blue: 0.34),
+        Color(red: 0.30, green: 0.74, blue: 0.76),
+        Color(red: 0.35, green: 0.43, blue: 0.70),
+        Color(red: 0.62, green: 0.34, blue: 0.74),
+        Color(red: 0.84, green: 0.38, blue: 0.62),
+        Color(red: 0.93, green: 0.30, blue: 0.30),
+        Color(red: 1.00, green: 0.55, blue: 0.22),
+        Color(red: 1.00, green: 0.68, blue: 0.20)
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(petals.indices, id: \.self) { index in
+                Capsule()
+                    .fill(petals[index].opacity(0.72))
+                    .frame(width: 18, height: 36)
+                    .offset(y: -18)
+                    .rotationEffect(.degrees(Double(index) * 360.0 / Double(petals.count)))
+                    .blendMode(.multiply)
+            }
+
+            Circle()
+                .fill(.white.opacity(0.92))
+                .frame(width: 28, height: 28)
+                .shadow(color: .black.opacity(0.08), radius: 3, x: 0, y: 1)
+        }
+        .frame(width: 64, height: 64)
+    }
 }
 
 struct FingertipToolsImmersiveView: View {
@@ -72,7 +106,7 @@ struct FingertipToolsImmersiveView: View {
     @State private var realityLensPanelDragStartPosition: SIMD3<Float> = [0.0, 1.05, -0.95]
     @State private var activeSpatialDragEntityName: String?
     @State private var isTestingWithoutHands = false
-    @State private var filterOverlayPosition: SIMD3<Float> = [0.0, 1.18, -2.2]
+    @State private var filterOverlayPosition: SIMD3<Float> = [0.0, 1.18, -0.22]
     @State private var suppressToolActivationUntil = Date.distantPast
     @State private var isImportPickerPresented = false
     @State private var shouldHideDesignCanvasAfterCancelledImport = false
@@ -115,33 +149,29 @@ struct FingertipToolsImmersiveView: View {
                 designSourceControl.name = "DesignSourceControlPanel"
                 designSourceControl.position = designSourceControlPosition
                 designSourceControl.orientation = orientationFacingUser(from: designSourceControlPosition)
-                designSourceControl.scale = [1.02, 1.02, 1.02]
+                designSourceControl.scale = [1.12, 1.12, 1.12]
                 designSourceControl.isEnabled = true
                 content.add(designSourceControl)
             }
 
-            if let designSourceControlDragHandle = attachments.entity(for: "DesignSourceControlPanelDragHandle") {
-                designSourceControlDragHandle.name = "DesignSourceControlPanelDragHandle"
-                prepareSpatialPanel(designSourceControlDragHandle, collisionSize: [0.34, 0.06, 0.04])
-                designSourceControlDragHandle.position = designSourceControlDragHandlePosition
-                designSourceControlDragHandle.orientation = orientationFacingUser(from: designSourceControlPosition)
-                designSourceControlDragHandle.scale = [1.02, 1.02, 1.02]
-                designSourceControlDragHandle.isEnabled = true
-                content.add(designSourceControlDragHandle)
-            }
+
+            let fullSceneFilterDome = makeFullSceneFilterDome()
+            content.add(fullSceneFilterDome)
 
             if let filterOverlay = attachments.entity(for: "FullSceneFilterOverlay") {
                 filterOverlay.name = "FullSceneFilterOverlay"
                 filterOverlay.position = filterOverlayPosition
-                filterOverlay.scale = [8.5, 8.5, 1.0]
-                filterOverlay.isEnabled = shouldShowFullSceneFilterOverlay
+                filterOverlay.orientation = orientationFacingUser(from: filterOverlayPosition)
+                filterOverlay.scale = [42.0, 42.0, 1.0]
+                filterOverlay.isEnabled = false
                 content.add(filterOverlay)
             }
 
             if let adjustmentOverlay = attachments.entity(for: "AdjustmentToolsOverlay") {
                 adjustmentOverlay.name = "AdjustmentToolsOverlay"
                 adjustmentOverlay.position = filterOverlayPosition
-                adjustmentOverlay.scale = [8.5, 8.5, 1.0]
+                adjustmentOverlay.orientation = orientationFacingUser(from: filterOverlayPosition)
+                adjustmentOverlay.scale = [42.0, 42.0, 1.0]
                 adjustmentOverlay.isEnabled = toolState.isToolEnabled && toolState.selectedAdjustmentTool != nil
                 content.add(adjustmentOverlay)
             }
@@ -217,20 +247,15 @@ struct FingertipToolsImmersiveView: View {
 
                 designSourceControl.position = designSourceControlPosition
                 designSourceControl.orientation = orientationFacingUser(from: designSourceControlPosition)
-                designSourceControl.scale = [1.02, 1.02, 1.02]
+                designSourceControl.scale = [1.12, 1.12, 1.12]
                 designSourceControl.isEnabled = true
             }
 
-            if let designSourceControlDragHandle = attachments.entity(for: "DesignSourceControlPanelDragHandle") {
-                if designSourceControlDragHandle.parent == nil {
-                    content.add(designSourceControlDragHandle)
-                }
 
-                prepareSpatialPanel(designSourceControlDragHandle, collisionSize: [0.34, 0.06, 0.04])
-                designSourceControlDragHandle.position = designSourceControlDragHandlePosition
-                designSourceControlDragHandle.orientation = orientationFacingUser(from: designSourceControlPosition)
-                designSourceControlDragHandle.scale = [1.02, 1.02, 1.02]
-                designSourceControlDragHandle.isEnabled = true
+            if let fullSceneFilterDome = content.entities.first(where: { $0.name == "FullSceneFilterDome" }) as? ModelEntity {
+                updateFullSceneFilterDome(fullSceneFilterDome)
+            } else {
+                content.add(makeFullSceneFilterDome())
             }
 
             if let filterOverlay = attachments.entity(for: "FullSceneFilterOverlay") {
@@ -239,8 +264,9 @@ struct FingertipToolsImmersiveView: View {
                 }
 
                 filterOverlay.position = filterOverlayPosition
-                filterOverlay.scale = [8.5, 8.5, 1.0]
-                filterOverlay.isEnabled = shouldShowFullSceneFilterOverlay
+                filterOverlay.orientation = orientationFacingUser(from: filterOverlayPosition)
+                filterOverlay.scale = [42.0, 42.0, 1.0]
+                filterOverlay.isEnabled = false
             }
 
             if let adjustmentOverlay = attachments.entity(for: "AdjustmentToolsOverlay") {
@@ -249,7 +275,8 @@ struct FingertipToolsImmersiveView: View {
                 }
 
                 adjustmentOverlay.position = filterOverlayPosition
-                adjustmentOverlay.scale = [8.5, 8.5, 1.0]
+                adjustmentOverlay.orientation = orientationFacingUser(from: filterOverlayPosition)
+                adjustmentOverlay.scale = [42.0, 42.0, 1.0]
                 adjustmentOverlay.isEnabled = toolState.isToolEnabled && toolState.selectedAdjustmentTool != nil
             }
 
@@ -326,21 +353,20 @@ struct FingertipToolsImmersiveView: View {
                 .environment(designReviewState)
             }
 
-            Attachment(id: "DesignSourceControlPanelDragHandle") {
-                Capsule()
-                    .fill(.white.opacity(0.38))
-                    .frame(width: 72, height: 4)
-                    .padding(.vertical, 5)
-                    .contentShape(Rectangle())
-            }
 
             Attachment(id: "FullSceneFilterOverlay") {
                 FullSceneFilterOverlay()
                     .environment(designReviewState)
+                    .frame(width: 7000, height: 5200)
+                    .contentShape(Rectangle())
+                    .allowsHitTesting(false)
             }
 
             Attachment(id: "AdjustmentToolsOverlay") {
                 AdjustmentToolsOverlay()
+                    .frame(width: 7000, height: 5200)
+                    .contentShape(Rectangle())
+                    .allowsHitTesting(false)
             }
 
             Attachment(id: "FloatingRealityLensOverlay") {
@@ -437,13 +463,10 @@ struct FingertipToolsImmersiveView: View {
     }
 
     private var sampleDesignDragHandlePosition: SIMD3<Float> {
-        let verticalOffset: Float = designReviewState.activeSource == .importedImage ? -0.345 : -0.215
+        let verticalOffset: Float = designReviewState.activeSource == .importedImage ? -0.355 : -0.215
         return sampleDesignPosition + SIMD3<Float>(0.0, verticalOffset, 0.012)
     }
 
-    private var designSourceControlDragHandlePosition: SIMD3<Float> {
-        designSourceControlPosition + SIMD3<Float>(0.0, -0.032, 0.012)
-    }
 
     private func prepareSpatialPanel(_ entity: Entity, collisionSize: SIMD3<Float>) {
         entity.components.set(InputTargetComponent())
@@ -457,6 +480,45 @@ struct FingertipToolsImmersiveView: View {
         let direction = viewerPosition - position
         let yaw = atan2(direction.x, direction.z)
         return simd_quatf(angle: yaw, axis: [0, 1, 0])
+    }
+
+    private func makeFullSceneFilterDome() -> ModelEntity {
+        let mesh = MeshResource.generateSphere(radius: 8.0)
+        let entity = ModelEntity(mesh: mesh, materials: [fullSceneFilterDomeMaterial()])
+        entity.name = "FullSceneFilterDome"
+        entity.position = [0.0, 1.20, 0.0]
+        entity.scale = [-1.0, 1.0, 1.0]
+        entity.isEnabled = shouldShowFullSceneFilterOverlay
+        return entity
+    }
+
+    private func updateFullSceneFilterDome(_ entity: ModelEntity) {
+        entity.position = [0.0, 1.20, 0.0]
+        entity.scale = [-1.0, 1.0, 1.0]
+        entity.model?.materials = [fullSceneFilterDomeMaterial()]
+        entity.isEnabled = shouldShowFullSceneFilterOverlay
+    }
+
+    private func fullSceneFilterDomeMaterial() -> UnlitMaterial {
+        let tint = fullSceneFilterTintUIColor()
+        var material = UnlitMaterial(color: tint)
+        material.blending = .transparent(opacity: .init(floatLiteral: Float(fullSceneFilterOpacity)))
+        return material
+    }
+
+    private var fullSceneFilterOpacity: Double {
+        min(max(Double(toolState.cvdIntensity) * 0.34, 0.0), 0.40)
+    }
+
+    private func fullSceneFilterTintUIColor() -> UIColor {
+        switch toolState.selectedCVDType {
+        case .protanopia:
+            return UIColor(red: 0.72, green: 0.69, blue: 0.30, alpha: 1.0)
+        case .deuteranopia:
+            return UIColor(red: 0.62, green: 0.68, blue: 0.25, alpha: 1.0)
+        case .tritanopia:
+            return UIColor(red: 0.78, green: 0.48, blue: 0.50, alpha: 1.0)
+        }
     }
 
     private func handleSpatialPanelDragChanged(_ value: EntityTargetValue<DragGesture.Value>) {
@@ -508,8 +570,7 @@ struct FingertipToolsImmersiveView: View {
 
     private func isSpatialPanelName(_ entityName: String) -> Bool {
         entityName == "FingertipToolSettingsPanelDragHandle" ||
-        entityName == "SampleDesignCanvasDragHandle" ||
-        entityName == "DesignSourceControlPanelDragHandle"
+        entityName == "SampleDesignCanvasDragHandle"
     }
 
     private func syncDragStartPosition(for entityName: String) {
@@ -518,8 +579,6 @@ struct FingertipToolsImmersiveView: View {
             panelDragStartPosition = settingsPanelPosition
         case "SampleDesignCanvasDragHandle":
             sampleDesignDragStartPosition = sampleDesignPosition
-        case "DesignSourceControlPanelDragHandle":
-            designSourceControlDragStartPosition = designSourceControlPosition
         default:
             break
         }
@@ -531,8 +590,6 @@ struct FingertipToolsImmersiveView: View {
             settingsPanelPosition = clampedToolPanelPosition(panelDragStartPosition + delta)
         case "SampleDesignCanvasDragHandle":
             sampleDesignPosition = clampedSampleDesignPosition(sampleDesignDragStartPosition + delta)
-        case "DesignSourceControlPanelDragHandle":
-            designSourceControlPosition = clampedDesignSourceControlPosition(designSourceControlDragStartPosition + delta)
         default:
             break
         }
@@ -554,13 +611,6 @@ struct FingertipToolsImmersiveView: View {
         )
     }
 
-    private func clampedDesignSourceControlPosition(_ position: SIMD3<Float>) -> SIMD3<Float> {
-        SIMD3<Float>(
-            min(max(position.x, -4.0), 4.0),
-            min(max(position.y, -1.0), 3.2),
-            min(max(position.z, -5.0), 1.2)
-        )
-    }
 
     private var shouldShowFullSceneFilterOverlay: Bool {
         designReviewState.activeSource != .liveSurface &&
@@ -590,13 +640,15 @@ struct FingertipToolsImmersiveView: View {
             }
 
             let sourceName = url.deletingPathExtension().lastPathComponent
+            let importedSourceName = sourceName.isEmpty ? "Imported Design" : sourceName
             let payload = AccessibilityAnalysisEngine.analyzeImportedDesign(
                 image: image,
-                sourceName: sourceName.isEmpty ? "Imported Design" : sourceName
+                sourceName: importedSourceName
             )
 
             shouldHideDesignCanvasAfterCancelledImport = false
             designReviewState.useTeamImportedDesign(payload)
+            designReviewState.setImportedPickImage(image, sourceName: importedSourceName)
         } catch {
             shouldHideDesignCanvasAfterCancelledImport = true
             print("Failed to import design file: \(error.localizedDescription)")
